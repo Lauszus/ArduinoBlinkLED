@@ -3,9 +3,9 @@
 	package="com.tkjelectronics.arduinoblinkled"
 	android:versionCode="1"
 	android:versionName="1.0">
-	<uses-sdk android:minSdkVersion="10" />
+	<uses-sdk android:minSdkVersion="10" android:targetSdkVersion="17"/>
  
-	<application android:icon="@drawable/ic_launcher" android:label="@string/app_name">
+	<application android:icon="@drawable/ic_launcher" android:allowBackup="true" android:label="@string/app_name">
 	    <uses-library android:name="com.android.future.usb.accessory"></uses-library>
 		<activity android:name="ArduinoBlinkLEDActivity"
 			android:label="@string/app_name" android:launchMode="singleTask">
