@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
  
-import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -13,6 +12,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.ToggleButton;
@@ -20,7 +20,7 @@ import android.widget.ToggleButton;
 import com.android.future.usb.UsbAccessory;
 import com.android.future.usb.UsbManager;
  
-public class ArduinoBlinkLEDActivity extends Activity {
+public class ArduinoBlinkLEDActivity extends FragmentActivity {
  
 	// TAG is used to debug in Android logcat console
 	private static final String TAG = "ArduinoAccessory";
@@ -72,8 +72,8 @@ public class ArduinoBlinkLEDActivity extends Activity {
 		filter.addAction(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
 		registerReceiver(mUsbReceiver, filter);
  
-		if (getLastNonConfigurationInstance() != null) {
-			mAccessory = (UsbAccessory) getLastNonConfigurationInstance();
+		if (getLastCustomNonConfigurationInstance() != null) {
+			mAccessory = (UsbAccessory) getLastCustomNonConfigurationInstance();
 			openAccessory(mAccessory);
 		}
  
@@ -83,11 +83,11 @@ public class ArduinoBlinkLEDActivity extends Activity {
 	}
  
 	@Override
-	public Object onRetainNonConfigurationInstance() {
+	public Object onRetainCustomNonConfigurationInstance() {
 		if (mAccessory != null) {
 			return mAccessory;
 		} else {
-			return super.onRetainNonConfigurationInstance();
+			return super.onRetainCustomNonConfigurationInstance();
 		}
 	}
  
