@@ -23,6 +23,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class ArduinoBlinkLEDActivity extends Activity {
+    public static final boolean D = BuildConfig.DEBUG; // This is automatically set when building
     private static final String TAG = "ArduinoBlinkLEDActivity"; // TAG is used to debug in Android logcat console
     private static final String ACTION_USB_PERMISSION = "com.tkjelectronics.arduino.blink.led.USB_PERMISSION";
 
@@ -44,8 +45,10 @@ public class ArduinoBlinkLEDActivity extends Activity {
                     UsbAccessory accessory = UsbManager.getAccessory(intent);
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false))
                         openAccessory(accessory);
-                    else
-                        Log.d(TAG, "Permission denied for accessory " + accessory);
+                    else {
+                        if (D)
+                            Log.d(TAG, "Permission denied for accessory " + accessory);
+                    }
                     mPermissionRequestPending = false;
                 }
             } else if (UsbManager.ACTION_USB_ACCESSORY_DETACHED.equals(action)) {
@@ -88,8 +91,10 @@ public class ArduinoBlinkLEDActivity extends Activity {
                     }
                 }
             }
-        } else
-            Log.d(TAG, "mAccessory is null");
+        } else {
+            if (D)
+                Log.d(TAG, "mAccessory is null");
+        }
     }
 
     @Override
@@ -126,9 +131,12 @@ public class ArduinoBlinkLEDActivity extends Activity {
             mInputStream = new FileInputStream(fd);
             mOutputStream = new FileOutputStream(fd);
 
-            Log.d(TAG, "Accessory opened");
-        } else
-            Log.d(TAG, "Accessory open failed");
+            if (D)
+                Log.d(TAG, "Accessory opened");
+        } else {
+            if (D)
+                Log.d(TAG, "Accessory open failed");
+        }
     }
 
     private void closeAccessory() {
@@ -164,7 +172,8 @@ public class ArduinoBlinkLEDActivity extends Activity {
             try {
                 mOutputStream.write(buffer);
             } catch (IOException e) {
-                Log.e(TAG, "write failed", e);
+                if (D)
+                    Log.e(TAG, "write failed", e);
             }
         }
     }
