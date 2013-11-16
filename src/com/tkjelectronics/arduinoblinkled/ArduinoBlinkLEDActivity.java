@@ -1,13 +1,15 @@
 package com.tkjelectronics.arduinoblinkled;
 
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
-import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.ToggleButton;
@@ -15,26 +17,23 @@ import android.widget.ToggleButton;
 import com.android.future.usb.UsbAccessory;
 import com.android.future.usb.UsbManager;
 
-public class ArduinoBlinkLEDActivity extends FragmentActivity {
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-    // TAG is used to debug in Android logcat console
-	private static final String TAG = "ArduinoAccessory";
- 
-	private static final String ACTION_USB_PERMISSION = "com.google.android.DemoKit.action.USB_PERMISSION";
- 
-	private UsbManager mUsbManager;
-	private PendingIntent mPermissionIntent;
-	private boolean mPermissionRequestPending;
-	private ToggleButton buttonLED;
+public class ArduinoBlinkLEDActivity extends Activity {
+    private static final String TAG = "ArduinoBlinkLEDActivity"; // TAG is used to debug in Android logcat console
+    private static final String ACTION_USB_PERMISSION = "com.tkjelectronics.arduino.blink.led.USB_PERMISSION";
 
     UsbAccessory mAccessory;
     ParcelFileDescriptor mFileDescriptor;
     FileInputStream mInputStream;
     FileOutputStream mOutputStream;
+    private UsbManager mUsbManager;
+    private PendingIntent mPermissionIntent;
+    private boolean mPermissionRequestPending;
+    ConnectedThread mConnectedThread;
 
     private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
         @Override
@@ -43,20 +42,16 @@ import java.io.IOException;
             if (ACTION_USB_PERMISSION.equals(action)) {
                 synchronized (this) {
                     UsbAccessory accessory = UsbManager.getAccessory(intent);
-					if (intent.getBooleanExtra(
-							UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false))
                         openAccessory(accessory);
-                    } else {
-						Log.d(TAG, "permission denied for accessory "
-								+ accessory);
-                    }
+                    else
+                        Log.d(TAG, "Permission denied for accessory " + accessory);
                     mPermissionRequestPending = false;
                 }
             } else if (UsbManager.ACTION_USB_ACCESSORY_DETACHED.equals(action)) {
                 UsbAccessory accessory = UsbManager.getAccessory(intent);
-                if (accessory != null && accessory.equals(mAccessory)) {
+                if (accessory != null && accessory.equals(mAccessory))
                     closeAccessory();
-                }
             }
         }
     };
@@ -64,46 +59,28 @@ import java.io.IOException;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.main);
 
         mUsbManager = UsbManager.getInstance(this);
         mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
         filter.addAction(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
         registerReceiver(mUsbReceiver, filter);
-
-		if (getLastCustomNonConfigurationInstance() != null) {
-			mAccessory = (UsbAccessory) getLastCustomNonConfigurationInstance();
-            openAccessory(mAccessory);
-		}
-
-        setContentView(R.layout.main);
-		buttonLED = (ToggleButton) findViewById(R.id.toggleButtonLED);
- 
     }
- 
-    @Override
-    public Object onRetainCustomNonConfigurationInstance() {
-        if (mAccessory != null) {
-            return mAccessory;
-        } else {
-			return super.onRetainCustomNonConfigurationInstance();
-        }
-    }
- 
+
     @Override
     public void onResume() {
         super.onResume();
 
-        if (mInputStream != null && mOutputStream != null) {
+        if (mInputStream != null && mOutputStream != null)
             return;
-        }
 
         UsbAccessory[] accessories = mUsbManager.getAccessoryList();
         UsbAccessory accessory = (accessories == null ? null : accessories[0]);
         if (accessory != null) {
-            if (mUsbManager.hasPermission(accessory)) {
+            if (mUsbManager.hasPermission(accessory))
                 openAccessory(accessory);
-            } else {
+            else {
                 synchronized (mUsbReceiver) {
                     if (!mPermissionRequestPending) {
                         mUsbManager.requestPermission(accessory, mPermissionIntent);
@@ -111,21 +88,34 @@ import java.io.IOException;
                     }
                 }
             }
-        } else {
+        } else
             Log.d(TAG, "mAccessory is null");
-        }
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
-        closeAccessory();
+    public void onBackPressed() {
+        if (mAccessory != null) {
+            new AlertDialog.Builder(this)
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .setTitle("Closing Activity")
+                    .setMessage("Are you sure you want to close this application? You will have to plug in the USB cable again to use the ADK feature.")
+                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            finish();
+                        }
+                    })
+                    .setNegativeButton("No", null)
+                    .show();
+        } else
+            finish();
     }
 
     @Override
     public void onDestroy() {
-        unregisterReceiver(mUsbReceiver);
         super.onDestroy();
+        closeAccessory();
+        unregisterReceiver(mUsbReceiver);
     }
 
     private void openAccessory(UsbAccessory accessory) {
@@ -135,18 +125,32 @@ import java.io.IOException;
             FileDescriptor fd = mFileDescriptor.getFileDescriptor();
             mInputStream = new FileInputStream(fd);
             mOutputStream = new FileOutputStream(fd);
-            Log.d(TAG, "accessory opened");
-        } else {
-            Log.d(TAG, "accessory open fail");
-        }
+
+            Log.d(TAG, "Accessory opened");
+        } else
+            Log.d(TAG, "Accessory open failed");
     }
 
     private void closeAccessory() {
+        // Close all streams
         try {
-            if (mFileDescriptor != null) {
+            if (mInputStream != null)
+                mInputStream.close();
+        } catch (Exception ignored) {
+        } finally {
+            mInputStream = null;
+        }
+        try {
+            if (mOutputStream != null)
+                mOutputStream.close();
+        } catch (Exception ignored) {
+        } finally {
+            mOutputStream = null;
+        }
+        try {
+            if (mFileDescriptor != null)
                 mFileDescriptor.close();
-            }
-		} catch (IOException e) {
+        } catch (IOException ignored) {
         } finally {
             mFileDescriptor = null;
             mAccessory = null;
@@ -154,13 +158,7 @@ import java.io.IOException;
     }
 
     public void blinkLED(View v) {
- 
-		byte[] buffer = new byte[1];
- 
-		if(buttonLED.isChecked())
-			buffer[0]=(byte)1; // button says on, light is on
-		else
-			buffer[0]=(byte)0; // button says off, light is off
+        byte buffer = (byte) ((((ToggleButton) v).isChecked()) ? 1 : 0); // Read button
 
         if (mOutputStream != null) {
             try {
