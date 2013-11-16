@@ -13,10 +13,6 @@ repositories {
     mavenCentral()
 }
 
-dependencies {
-    compile 'com.android.support:support-v4:19.0.+'
-}
-
 android {
     compileSdkVersion 'Google Inc.:Google APIs:19'
     buildToolsVersion '19.0.0'
