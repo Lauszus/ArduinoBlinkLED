@@ -25,8 +25,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-// TODO: Send data from Arduino and make status icon to indicate when accessory is connected
-
 public class ArduinoBlinkLEDActivity extends Activity {
     public static final boolean D = BuildConfig.DEBUG; // This is automatically set when building
     private static final String TAG = "ArduinoBlinkLEDActivity"; // TAG is used to debug in Android logcat console
@@ -39,6 +37,7 @@ public class ArduinoBlinkLEDActivity extends Activity {
     private UsbManager mUsbManager;
     private PendingIntent mPermissionIntent;
     private boolean mPermissionRequestPending;
+    TextView connectionStatus;
     ConnectedThread mConnectedThread;
 
     private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
@@ -68,6 +67,7 @@ public class ArduinoBlinkLEDActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+        connectionStatus = (TextView) findViewById(R.id.connectionStatus);
 
         mUsbManager = UsbManager.getInstance(this);
         mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
@@ -80,8 +80,10 @@ public class ArduinoBlinkLEDActivity extends Activity {
     public void onResume() {
         super.onResume();
 
-        if (mInputStream != null && mOutputStream != null)
+        if (mAccessory != null) {
+            setConnectionStatus(true);
             return;
+        }
 
         UsbAccessory[] accessories = mUsbManager.getAccessoryList();
         UsbAccessory accessory = (accessories == null ? null : accessories[0]);
@@ -89,6 +91,7 @@ public class ArduinoBlinkLEDActivity extends Activity {
             if (mUsbManager.hasPermission(accessory))
                 openAccessory(accessory);
             else {
+                setConnectionStatus(false);
                 synchronized (mUsbReceiver) {
                     if (!mPermissionRequestPending) {
                         mUsbManager.requestPermission(accessory, mPermissionIntent);
@@ -97,6 +100,7 @@ public class ArduinoBlinkLEDActivity extends Activity {
                 }
             }
         } else {
+            setConnectionStatus(false);
             if (D)
                 Log.d(TAG, "mAccessory is null");
         }
@@ -108,7 +112,7 @@ public class ArduinoBlinkLEDActivity extends Activity {
             new AlertDialog.Builder(this)
                     .setIcon(android.R.drawable.ic_dialog_alert)
                     .setTitle("Closing Activity")
-                    .setMessage("Are you sure you want to close this application? You will have to plug in the USB cable again to use the ADK feature.")
+                    .setMessage("Are you sure you want to close this application?")
                     .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
@@ -139,15 +143,24 @@ public class ArduinoBlinkLEDActivity extends Activity {
             mConnectedThread = new ConnectedThread(this);
             mConnectedThread.start();
 
+            setConnectionStatus(true);
+
             if (D)
                 Log.d(TAG, "Accessory opened");
         } else {
+            setConnectionStatus(false);
             if (D)
                 Log.d(TAG, "Accessory open failed");
         }
     }
 
+    private void setConnectionStatus(boolean connected) {
+        connectionStatus.setText(connected ? "Connected" : "Disconnected");
+    }
+
     private void closeAccessory() {
+        setConnectionStatus(false);
+
         // Cancel any thread currently running a connection
         if (mConnectedThread != null) {
             mConnectedThread.cancel();
@@ -196,7 +209,6 @@ public class ArduinoBlinkLEDActivity extends Activity {
         Activity activity;
         TextView mTextView;
         byte[] buffer = new byte[1024];
-        int bytes;
         boolean running;
 
         ConnectedThread(Activity activity) {
@@ -208,8 +220,8 @@ public class ArduinoBlinkLEDActivity extends Activity {
         public void run() {
             while (running) {
                 try {
-                    bytes = mInputStream.read(buffer);
-                    if (bytes > 3) {
+                    int bytes = mInputStream.read(buffer);
+                    if (bytes > 3) { // The message is 4 bytes long
                         activity.runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
