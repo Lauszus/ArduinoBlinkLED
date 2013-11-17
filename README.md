@@ -3,7 +3,7 @@
 The code is released under the GNU General Public License.
 _________
 
-This is source code for the Android application for the following example:
+This is the source code for the Android application for the following example:
 <https://github.com/felis/USB_Host_Shield_2.0/blob/master/examples/adk/ArduinoBlinkLED/ArduinoBlinkLED.ino>.
 
 It demonstrates how to send between an Arduino and an Android phone.
