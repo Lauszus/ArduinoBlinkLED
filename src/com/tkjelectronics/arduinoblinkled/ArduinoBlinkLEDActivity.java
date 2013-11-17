@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.ToggleButton;
 
 import com.android.future.usb.UsbAccessory;
@@ -21,6 +22,10 @@ import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+// TODO: Send data from Arduino and make status icon to indicate when accessory is connected
 
 public class ArduinoBlinkLEDActivity extends Activity {
     public static final boolean D = BuildConfig.DEBUG; // This is automatically set when building
@@ -131,6 +136,9 @@ public class ArduinoBlinkLEDActivity extends Activity {
             mInputStream = new FileInputStream(fd);
             mOutputStream = new FileOutputStream(fd);
 
+            mConnectedThread = new ConnectedThread(this);
+            mConnectedThread.start();
+
             if (D)
                 Log.d(TAG, "Accessory opened");
         } else {
@@ -140,6 +148,12 @@ public class ArduinoBlinkLEDActivity extends Activity {
     }
 
     private void closeAccessory() {
+        // Cancel any thread currently running a connection
+        if (mConnectedThread != null) {
+            mConnectedThread.cancel();
+            mConnectedThread = null;
+        }
+
         // Close all streams
         try {
             if (mInputStream != null)
@@ -175,6 +189,42 @@ public class ArduinoBlinkLEDActivity extends Activity {
                 if (D)
                     Log.e(TAG, "write failed", e);
             }
+        }
+    }
+
+    private class ConnectedThread extends Thread {
+        Activity activity;
+        TextView mTextView;
+        byte[] buffer = new byte[1024];
+        int bytes;
+        boolean running;
+
+        ConnectedThread(Activity activity) {
+            this.activity = activity;
+            mTextView = (TextView) findViewById(R.id.textView);
+            running = true;
+        }
+
+        public void run() {
+            while (running) {
+                try {
+                    bytes = mInputStream.read(buffer);
+                    if (bytes > 3) {
+                        activity.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                long timer = ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).getLong();
+                                mTextView.setText(Long.toString(timer));
+                            }
+                        });
+                    }
+                } catch (Exception ignore) {
+                }
+            }
+        }
+
+        public void cancel() {
+            running = false;
         }
     }
 
