@@ -6,14 +6,13 @@ _________
 This is source code for the Android application for the following example:
 <https://github.com/felis/USB_Host_Shield_2.0/blob/master/examples/adk/ArduinoBlinkLED/ArduinoBlinkLED.ino>.
 
-It demonstrates how to send data to an Arduino from the Android phone.
+It demonstrates how to send between an Arduino and an Android phone.
 
 The code for the Android application is heavily based on this guide:
 <http://allaboutee.com/2011/12/31/arduino-adk-board-blink-an-led-with-your-phone-code-and-explanation/> by Miguel.
 
-In order to build you have to set the build target to Google API.
-In Eclipse go to:
-Project>Properties>Android
-And then select at least API Level 10 - the newest one is recommended.
+## How to build
 
-For more information send me an email at <a href="mailto:kristianl@tkjelectronics.dk?Subject=BalanduinoAndroidApp">kristianl@tkjelectronics.dk</a>.
+This project is intended to be used with Android Studio and Gradle. See the following page for more information: <http://developer.android.com/sdk/installing/studio.html>.
+
+For more information send me an email at <kristianl@tkjelectronics.dk>.
