@@ -15,8 +15,8 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
-import com.android.future.usb.UsbAccessory;
-import com.android.future.usb.UsbManager;
+import android.hardware.usb.UsbAccessory;
+import android.hardware.usb.UsbManager;
 
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
@@ -46,7 +46,7 @@ public class ArduinoBlinkLEDActivity extends Activity {
             String action = intent.getAction();
             if (ACTION_USB_PERMISSION.equals(action)) {
                 synchronized (this) {
-                    UsbAccessory accessory = UsbManager.getAccessory(intent);
+                    UsbAccessory accessory = (UsbAccessory) intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false))
                         openAccessory(accessory);
                     else {
@@ -56,7 +56,7 @@ public class ArduinoBlinkLEDActivity extends Activity {
                     mPermissionRequestPending = false;
                 }
             } else if (UsbManager.ACTION_USB_ACCESSORY_DETACHED.equals(action)) {
-                UsbAccessory accessory = UsbManager.getAccessory(intent);
+                UsbAccessory accessory = (UsbAccessory) intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
                 if (accessory != null && accessory.equals(mAccessory))
                     closeAccessory();
             }
@@ -69,7 +69,7 @@ public class ArduinoBlinkLEDActivity extends Activity {
         setContentView(R.layout.main);
         connectionStatus = (TextView) findViewById(R.id.connectionStatus);
 
-        mUsbManager = UsbManager.getInstance(this);
+        mUsbManager = (UsbManager) getSystemService(Context.USB_SERVICE);
         mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
         filter.addAction(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
