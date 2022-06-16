@@ -10,6 +10,11 @@ buildscript {
 
 apply plugin: 'com.android.application'
 
+repositories {
+    mavenCentral()
+    google()
+}
+
 android {
     defaultConfig {
         minSdkVersion 10
