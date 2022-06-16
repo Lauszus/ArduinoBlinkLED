@@ -11,10 +11,9 @@ buildscript {
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 'Google Inc.:Google APIs:23'
-
     defaultConfig {
         minSdkVersion 10
+        compileSdkVersion 32
         targetSdkVersion 32
     }
 
